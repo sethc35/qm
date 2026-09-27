@@ -28,6 +28,10 @@ export default tseslint.config(
     languageOptions: { globals: globals.browser },
   },
   {
+    files: ["skills-seed/shared-browser/extension/*.js"],
+    languageOptions: { globals: globals.browser },
+  },
+  {
     files: ["**/*.js", "**/*.mjs", "**/*.cjs"],
     languageOptions: { globals: globals.node },
   },

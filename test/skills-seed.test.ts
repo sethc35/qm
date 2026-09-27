@@ -51,6 +51,12 @@ test("installSeedSkills publishes the repository starter catalog into org scope"
   );
   assert.ok(result.installed.includes("taste-skill"));
   assert.ok(result.installed.includes("use-shared-credential"));
+  assert.ok(result.installed.includes("shared-browser"));
+  const sharedBrowser = (await skills.list()).find((s) => s.manifest.name === "shared-browser")!;
+  assert.ok(sharedBrowser.manifest.files?.some((file) => file.path === "extension/manifest.json"));
+  assert.ok(sharedBrowser.manifest.files?.some((file) => file.path === "extension/content.js"));
+  assert.ok(sharedBrowser.manifest.files?.some((file) => file.path === "scripts/launch.py" && file.executable));
+  assert.ok(sharedBrowser.manifest.files?.some((file) => file.path === "scripts/multi_agent.py" && file.executable));
 
   const published = (await skills.list()).filter((s) => s.status === "published");
   assert.equal(published.length, result.installed.length);

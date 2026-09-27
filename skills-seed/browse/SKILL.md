@@ -5,6 +5,10 @@ description: Drive a real stealth browser from your shell — act on websites (o
 
 # Browse (the skill-based browser)
 
+When two or more agents must operate the same browser or page concurrently, stop here and
+use the `shared-browser` skill. Ordinary browse runs create one agent-owned browser session;
+they do not provide actor-scoped input or safe shared form editing.
+
 This is the platform's browser: the logic lives in this skill and runs in your shell; only
 the heavy runtime (browser-use + Chromium) is baked into your computer's image at
 `/opt/browser-engine/venv`. The browser itself is a remote stealth browser you drive over

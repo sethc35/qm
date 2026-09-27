@@ -1,0 +1,14 @@
+{
+  "manifest_version": 3,
+  "name": "QM Shared Browser",
+  "version": "0.1.0",
+  "description": "Actor-scoped DOM input for QM shared browser agents.",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content.js"],
+      "run_at": "document_start",
+      "all_frames": false
+    }
+  ]
+}
