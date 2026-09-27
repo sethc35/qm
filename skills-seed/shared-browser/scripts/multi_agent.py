@@ -106,6 +106,11 @@ async def run(args):
         operation = {"kind": args.kind, "ref": args.ref}
         if args.value is not None:
             operation["value"] = args.value
+        if args.duration_ms is not None:
+            operation["durationMs"] = args.duration_ms
+        if args.sync_key is not None:
+            operation["syncKey"] = args.sync_key
+            operation["participants"] = args.participants
     sequence = next_sequence(args.session, args.actor)
     started_at = time.time()
     playwright, page = await page_for(session["cdpUrl"])
@@ -156,8 +161,11 @@ def parser():
     commands.add_parser("observe")
     action = commands.add_parser("act")
     action.add_argument("--ref", required=True)
-    action.add_argument("--kind", required=True, choices=["fill", "append", "click", "check", "uncheck", "select", "scroll"])
+    action.add_argument("--kind", required=True, choices=["fill", "type", "append", "click", "check", "uncheck", "select", "scroll"])
     action.add_argument("--value")
+    action.add_argument("--duration-ms", type=int)
+    action.add_argument("--sync-key")
+    action.add_argument("--participants", type=int, default=2)
     commands.add_parser("audit")
     return result
 

@@ -22,11 +22,16 @@ and input dispatch, not those boundaries.
   locally with their injected `BROWSERBASE_API_KEY`.
 - The session id may be sent in worker tasks. Never put the CDP URL, provider key, profile name,
   or live-view URL in swarm context or mail.
-- Give each worker a stable actor id and disjoint page responsibility.
-- Use semantic `fill`, `append`, `click`, `check`, `uncheck`, and `select` actions. These avoid
-  global focus and can safely target different elements during overlapping worker turns.
-- Actions against one element are deterministic but not simultaneous. Concurrent edits to the
-  same text field are last-write-wins; partition that field to one worker.
+- Give each worker a stable actor id and page responsibility. Different actors may perform the
+  same action kind concurrently, including synchronized typing into different fields.
+- Use semantic `fill`, `type`, `append`, `click`, `check`, `uncheck`, and `select` actions. These
+  avoid global focus and can safely target different elements during overlapping worker turns.
+- Pair actions with the same `--sync-key` and participant count to make distinct workers wait at
+  a browser-side rendezvous and begin together. Use `--duration-ms` to keep both computer-use
+  indicators visibly active during recording and QA.
+- Same-element behavior is deterministic: `fill` is last-completing-write-wins, `append` composes
+  in commit order, and `check`/`uncheck` are idempotent. Native `click` retains page semantics, so
+  two clicks on a toggle may cancel each other.
 - Navigation and form submission are single-owner operations. Workers fill; the coordinator
   verifies the combined state and submits only when the user's request authorizes submission.
 - A shared session is DM-only when it uses a personal browser profile or signed-in account.
@@ -133,10 +138,20 @@ python3 skills/shared-browser/scripts/multi_agent.py \
 python3 skills/shared-browser/scripts/multi_agent.py \
   --session /tmp/qm-shared-browser/session.json --actor '<actor id>' \
   act --ref '<ref from observe>' --kind fill --value '<value>'
+
+python3 skills/shared-browser/scripts/multi_agent.py \
+  --session /tmp/qm-shared-browser/session.json --actor '<actor id>' \
+  act --ref '<ref from observe>' --kind type --value '<value>' \
+  --sync-key '<shared action key>' --participants 2 --duration-ms 1800
 ```
 
-Supported action kinds are `fill`, `append`, `click`, `check`, `uncheck`, `select`, and
-`scroll`. `select` takes the option value. `scroll` ignores `--value`.
+Supported action kinds are `fill`, `type`, `append`, `click`, `check`, `uncheck`, `select`, and
+`scroll`. `type` visibly replaces the field value one character at a time without taking global
+keyboard focus. `select` takes the option value. `scroll` ignores `--value`.
+
+The page runtime always renders a persistent `QM shared computer use` panel. Every actor gets a
+stable color, labeled cursor, target ring, current action, and waiting/working/done state. Do not
+hide or remove these indicators in a recording or user-facing shared session.
 
 Spawn all workers before waiting so their turns overlap. Read both swarm replies, then observe
 as `coordinator` and compare every requested value with the live shared DOM. Do not trust worker
@@ -148,16 +163,22 @@ The capability is not accepted until a live QA run passes this scenario:
 
 1. Start one browser on a disposable Google Form containing at least four editable questions.
 2. Spawn exactly two workers and give both the same Browserbase session id.
-3. Assign disjoint questions to each worker and let both turns run concurrently.
-4. Observe the final form from the coordinator and verify all four values together.
-5. Verify the live session audit reports action records from both actor ids against one browser
+3. Assign one text question to each worker. Have both call `type` with the same `--sync-key`,
+   `--participants 2`, and a visible duration. Verify their browser-side action intervals overlap.
+4. Assign the remaining questions and let both turns continue concurrently.
+5. Observe the final form from the coordinator and verify all four values together.
+6. Verify the live session audit reports action records from both actor ids against one browser
    session id.
-6. Submit only if the disposable form was created for this QA or the user explicitly authorized
+7. Submit only if the disposable form was created for this QA or the user explicitly authorized
    submission; otherwise stop with the correctly filled form visible.
 
 A pass requires one browser session, exactly two real QM worker sessions, two distinct actors,
-overlapping worker turns, and the correct combined live form state. Coordinator subprocesses,
-two separate browsers, sequential worker turns, mocked DOM, or unit tests alone do not pass.
+overlapping worker turns, at least one synchronized same-kind action pair with overlapping runtime
+intervals, visible per-agent indicators, and the correct combined live form state. Coordinator
+subprocesses, two separate browsers, sequential worker turns, mocked DOM, or unit tests alone do
+not pass.
+
+Coordinator subprocesses do not pass this release gate.
 
 ## Audit and cleanup
 

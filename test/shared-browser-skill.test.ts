@@ -17,6 +17,8 @@ test("shared browser skill makes one-session concurrent Google Forms QA the rele
   assert.match(skill, /real QM worker sessions/i);
   assert.match(skill, /\/v1\/swarm/);
   assert.match(skill, /overlapping worker turns/i);
+  assert.match(skill, /synchronized same-kind action pair/i);
+  assert.match(skill, /visible per-agent indicators/i);
   assert.match(skill, /Coordinator subprocesses[\s\S]*do not pass/i);
 });
 
@@ -31,4 +33,20 @@ test("shared browser scripts and extension parse", () => {
   execFileSync("python3", ["-m", "py_compile", "skills-seed/shared-browser/scripts/launch.py"]);
   execFileSync("python3", ["-m", "py_compile", "skills-seed/shared-browser/scripts/multi_agent.py"]);
   execFileSync("node", ["--check", "skills-seed/shared-browser/extension/content.js"]);
+});
+
+test("shared browser supports synchronized same-kind actions with visible actor state", () => {
+  const runtime = readFileSync("skills-seed/shared-browser/extension/content.js", "utf8");
+  const client = readFileSync("skills-seed/shared-browser/scripts/multi_agent.py", "utf8");
+  assert.match(runtime, /QM shared computer use/);
+  assert.match(runtime, /const palette = \[/);
+  assert.doesNotMatch(runtime, /innerHTML/);
+  assert.match(runtime, /waiting for \$\{operation\.participants\} agents/);
+  assert.match(runtime, /const rendezvous/);
+  assert.match(runtime, /await rendezvous\(actorId, operation\)/);
+  assert.match(runtime, /const typeValue = async/);
+  assert.match(runtime, /finishedAt/);
+  assert.match(client, /--sync-key/);
+  assert.match(client, /--duration-ms/);
+  assert.match(client, /"type"/);
 });
